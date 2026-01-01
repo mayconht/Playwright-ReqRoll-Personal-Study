@@ -57,7 +57,7 @@ jobs:
 
     env:
       CI: true
-      REPORTS__PATH: ./reports
+      REPORTS__PATH: ${{ github.workspace }}/reports
       TRACING__TRACESPATH: Playwright-Traces
       VIDEO__DIR: Playwright-Videos
       SCREENSHOTS__DIR: Playwright-Screenshots
@@ -84,19 +84,38 @@ jobs:
       - name: Build solution
         run: dotnet build --configuration Release --no-restore
 
+      - name: Create reports directories
+        run: |
+          mkdir -p ${{ github.workspace }}/reports/Playwright-Traces
+          mkdir -p ${{ github.workspace }}/reports/Playwright-Videos
+          mkdir -p ${{ github.workspace }}/reports/Playwright-Screenshots
+          mkdir -p ${{ github.workspace }}/TestResults
+
       - name: Run Tests
         id: run-tests
         run: |
           dotnet test --configuration Release --no-build \
             --logger "trx;LogFileName=test-results.trx" \
-            --results-directory "./TestResults"
+            --results-directory "${{ github.workspace }}/TestResults"
         continue-on-error: true
+
+      - name: List reports directory
+        if: always()
+        run: |
+          echo "=== Current directory ==="
+          pwd
+          echo "=== Workspace ==="
+          echo "${{ github.workspace }}"
+          echo "=== Reports directory structure ==="
+          find ${{ github.workspace }}/reports -type f 2>/dev/null || echo "No files found in reports"
+          echo "=== TestResults directory ==="
+          find ${{ github.workspace }}/TestResults -type f 2>/dev/null || echo "No files found in TestResults"
 
       - name: Publish Test Results
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          files: 'TestResults/**/*.trx'
+          files: '${{ github.workspace }}/TestResults/**/*.trx'
           check_name: 'Playwright-ReqRoll Tests - ${{ env.BROWSER__TYPE }}'
           comment_title: 'Playwright-ReqRoll Test Results'
           comment_mode: always
@@ -110,7 +129,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: TestResults/
+          path: ${{ github.workspace }}/TestResults/
           if-no-files-found: ignore
 
       - name: Publish Playwright Traces
@@ -118,7 +137,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-traces
-          path: reports/Playwright-Traces/
+          path: ${{ github.workspace }}/reports/Playwright-Traces/
           if-no-files-found: ignore
 
       - name: Publish Playwright Videos
@@ -126,7 +145,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-videos
-          path: reports/Playwright-Videos/
+          path: ${{ github.workspace }}/reports/Playwright-Videos/
           if-no-files-found: ignore
 
       - name: Publish Playwright Screenshots
@@ -134,7 +153,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-screenshots
-          path: reports/Playwright-Screenshots/
+          path: ${{ github.workspace }}/reports/Playwright-Screenshots/
           if-no-files-found: ignore
 
       - name: Check test status
