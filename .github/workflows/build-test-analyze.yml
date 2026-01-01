@@ -59,14 +59,14 @@ concurrency:
 
 jobs:
   # ============================================================
-  # JOB: Build, Test and Analyze (matches Azure DevOps structure)
+  # JOB: Build, Test and Analyze
   # ============================================================
   build-and-test:
     name: 'Build and Test'
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright/dotnet:v1.55.0-noble
-      options: --user 1001 --ipc=host
+      # options: --user 1001 --ipc=host
 
     env:
       CI: true
