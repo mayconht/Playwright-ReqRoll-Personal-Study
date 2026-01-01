@@ -1,8 +1,4 @@
-﻿# ============================================================
-# GitHub Actions Pipeline for Playwright-ReqRoll Tests
-# ============================================================
-
-name: Playwright-ReqRoll Tests
+﻿name: Playwright-ReqRoll Tests
 
 on:
   workflow_dispatch:
@@ -21,11 +17,6 @@ on:
         required: false
         default: true
         type: boolean
-      categories:
-        description: 'Test categories to run (e.g., Login,Search)'
-        required: false
-        default: 'Login,Search'
-        type: string
       enable_tracing:
         description: 'Enable tracing'
         required: false
@@ -42,12 +33,11 @@ on:
         default: true
         type: boolean
   push:
-    branches: [ main, master, develop, dev ]
+    branches: [ master, dev ]
   pull_request:
-    branches: [ main, master, develop, dev ]
+    branches: [ master, dev ]
     types: [opened, synchronize, reopened]
 
-# Required for mikepenz/action-junit-report to create check runs
 permissions:
   contents: read
   checks: write
@@ -58,9 +48,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ============================================================
-  # JOB: Build, Test and Analyze
-  # ============================================================
   build-and-test:
     name: 'Build and Test'
     runs-on: ubuntu-latest
@@ -80,38 +67,23 @@ jobs:
       TRACING__SAVEONPASS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.enable_tracing || 'true' }}
       VIDEO__RECORD: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.enable_video || 'true' }}
       SCREENSHOTS__ONSUCCESS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.enable_screenshots || 'true' }}
-      SCREENSHOTS__ONFAILURE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.enable_screenshots || 'true' }}
+      SCREENSHOTS__ONFAILURE: 'true'
 
     steps:
-      # ============================================================
-      # CHECKOUT
-      # ============================================================
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ============================================================
-      # SETUP .NET SDK
-      # ============================================================
       - name: Setup .NET SDK 8.0
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
-      # ============================================================
-      # RESTORE NUGET PACKAGES
-      # ============================================================
       - name: Restore NuGet packages
         run: dotnet restore
 
-      # ============================================================
-      # BUILD SOLUTION
-      # ============================================================
       - name: Build solution
         run: dotnet build --configuration Release --no-restore
 
-      # ============================================================
-      # RUN TESTS
-      # ============================================================
       - name: Run Tests
         id: run-tests
         run: |
@@ -120,62 +92,19 @@ jobs:
             --results-directory "${{ github.workspace }}/TestResults"
         continue-on-error: true
 
-      # ============================================================
-      # GENERATE TEST SUMMARY
-      # ============================================================
-      - name: Generate Test Summary
-        if: always()
-        run: |
-          echo "### Playwright-ReqRoll Tests - ${{ env.BROWSER__TYPE }} :test_tube:" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [ -f "${{ github.workspace }}/TestResults/test-results.trx" ]; then
-            # Parse TRX file for summary using grep
-            TOTAL=$(grep -oP 'total="\K[^"]+' "${{ github.workspace }}/TestResults/test-results.trx" | head -1 || echo "0")
-            PASSED=$(grep -oP 'passed="\K[^"]+' "${{ github.workspace }}/TestResults/test-results.trx" | head -1 || echo "0")
-            FAILED=$(grep -oP 'failed="\K[^"]+' "${{ github.workspace }}/TestResults/test-results.trx" | head -1 || echo "0")
-            EXECUTED=$(grep -oP 'executed="\K[^"]+' "${{ github.workspace }}/TestResults/test-results.trx" | head -1 || echo "0")
-
-            echo "| Metric | Result |" >> $GITHUB_STEP_SUMMARY
-            echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
-            echo "| :clipboard: Total | ${TOTAL} |" >> $GITHUB_STEP_SUMMARY
-            echo "| :white_check_mark: Passed | ${PASSED} |" >> $GITHUB_STEP_SUMMARY
-            echo "| :x: Failed | ${FAILED} |" >> $GITHUB_STEP_SUMMARY
-            echo "| :arrow_forward: Executed | ${EXECUTED} |" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-
-            echo "**Configuration:**" >> $GITHUB_STEP_SUMMARY
-            echo "- Browser: \`${{ env.BROWSER__TYPE }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "- Headless: \`${{ env.BROWSER__HEADLESS }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "- Tracing: \`${{ env.TRACING__SAVEONPASS }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "- Video: \`${{ env.VIDEO__RECORD }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "- Screenshots: \`${{ env.SCREENSHOTS__ONSUCCESS }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-
-            if [ "$FAILED" -eq 0 ]; then
-              echo "**Status:** :white_check_mark: All tests passed" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "**Status:** :x: Some tests failed (${FAILED} failures)" >> $GITHUB_STEP_SUMMARY
-            fi
-          else
-            echo ":warning: Test results file not found" >> $GITHUB_STEP_SUMMARY
-          fi
-
-      # ============================================================
-      # PUBLISH TEST RESULTS
-      # ============================================================
       - name: Publish Test Results
         if: always()
-        uses: dorny/test-reporter@v1
+        uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          name: 'Playwright-ReqRoll Tests - ${{ env.BROWSER__TYPE }}'
-          path: '${{ github.workspace }}/TestResults/*.trx'
-          reporter: 'dotnet-trx'
-          fail-on-error: true
+          files: '${{ github.workspace }}/TestResults/**/*.trx'
+          check_name: 'Playwright-ReqRoll Tests - ${{ env.BROWSER__TYPE }}'
+          comment_title: 'Playwright-ReqRoll Test Results'
+          comment_mode: always
+          report_individual_runs: true
+          compare_to_earlier_commit: true
+          check_run_annotations: all tests, skipped tests
+          job_summary: true
 
-      # ============================================================
-      # UPLOAD ARTIFACTS
-      # ============================================================
       - name: Publish Test Results Artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -208,9 +137,6 @@ jobs:
           path: ${{ github.workspace }}/reports/Playwright-Screenshots/
           if-no-files-found: ignore
 
-      # ============================================================
-      # CHECK TEST STATUS
-      # ============================================================
       - name: Check test status
         if: steps.run-tests.outcome == 'failure'
         run: |
