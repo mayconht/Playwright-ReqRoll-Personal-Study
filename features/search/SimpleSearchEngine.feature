@@ -10,8 +10,9 @@ So that I can find relevant results
     Background:
         Given I navigate to the search page "https://www.cnarios.com/challenges/simple-search-engine"
 
-        
-    # You can convert this to Scenario Outline if needed and change the data as required.
+
+# You can convert this to Scenario Outline if needed and change the data as required.
+
     @Positive
     @High
     @SSE_001
@@ -20,8 +21,9 @@ So that I can find relevant results
         And I click the search button
         Then I should see at least 3 search results
         Then each result should have a clickable title, URL, and snippet
-        
-    # No actual code was needed to implement this step.
+
+# No actual code was needed to implement this step.
+
     @Positive
     @High
     @SSE_001
@@ -30,7 +32,7 @@ So that I can find relevant results
         And I click the search button
         Then I should see at least 3 search results
         Then each result should have a clickable title, URL, and snippet
-        
+
         Examples:
           | inputQuery         |
           | JavaScript basics  |
@@ -66,7 +68,7 @@ So that I can find relevant results
         Then I should see fresh results for the second query
 
         Examples:
-          | firstQuery             | secondQuery       |
-          | React Testing          | Node.js tutorials |
-          | JavaScript basics      | Web development   |
-          | Selenium WebDriver     | API testing       |
+          | firstQuery         | secondQuery       |
+          | React Testing      | Node.js tutorials |
+          | JavaScript basics  | Web development   |
+          | Selenium WebDriver | API testing       |

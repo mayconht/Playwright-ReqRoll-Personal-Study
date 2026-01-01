@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet restore:*)"
+    ]
+  }
+}

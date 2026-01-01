@@ -1,55 +1,45 @@
-﻿using Microsoft.Playwright;
+using Microsoft.Playwright;
+using Playwright_ReqRoll.pages;
 
 namespace Playwright_ReqRoll.pages.search;
 
 /// <summary>
-///     Represents the Search page in the application, providing methods to interact with search form elements.
-///     Uses Playwright locators to find and manipulate page elements.
+/// Page Object for the Search page in the application.
+/// Provides methods to interact with search form elements and verify results.
 /// </summary>
-public class SearchPageLocators(IPage page)
+public class SearchPageLocators : BasePage
 {
     /// <summary>
-    ///     Gets the locator for the search input textbox.
+    /// Initializes a new instance of the SearchPageLocators class.
     /// </summary>
-    private ILocator GetSearchInput() => page.GetByTestId("search-input");
+    /// <param name="page">The Playwright page instance.</param>
+    public SearchPageLocators(IPage page) : base(page)
+    {
+    }
+
+    private ILocator SearchInput => Page.GetByTestId("search-input");
+    private ILocator SearchButton => Page.GetByTestId("search-button");
+    private ILocator SearchResults => Page.Locator(".MuiCard-root");
 
     /// <summary>
-    ///     Gets the locator for the search button.
-    /// </summary>
-    private ILocator GetSearchButton() => page.GetByTestId("search-button");
-
-    /// <summary>
-    ///     Gets the locator for the search results.
-    /// </summary>
-    private ILocator SearchResults => page.Locator(".MuiCard-root");
-
-    /// <summary>
-    ///     Stores the old input element handle for stale element testing.
-    /// </summary>
-    private IElementHandle? _oldInputHandle;
-
-    /// <summary>
-    ///     Enters the specified query into the search input.
+    /// Enters the specified query into the search input.
     /// </summary>
     /// <param name="query">The search query to enter.</param>
     public async Task EnterSearchQuery(string query)
     {
-        var input = GetSearchInput();
-        _oldInputHandle = await input.ElementHandleAsync(); // Store the handle before potential re-render
-        await input.FillAsync(query);
+        await SearchInput.FillAsync(query);
     }
 
     /// <summary>
-    ///     Clicks the search button and re-locates the input after submission to handle re-renders.
+    /// Clicks the search button to submit the search query.
     /// </summary>
     public async Task ClickSearchButton()
     {
-        await GetSearchButton().ClickAsync();
-        _ = GetSearchInput(); 
+        await SearchButton.ClickAsync();
     }
 
     /// <summary>
-    ///     Gets the count of search results.
+    /// Gets the count of search results displayed on the page.
     /// </summary>
     /// <returns>The number of search results.</returns>
     public async Task<int> GetResultsCount()
@@ -59,50 +49,42 @@ public class SearchPageLocators(IPage page)
     }
 
     /// <summary>
-    ///     Checks if each result has title, URL, and snippet.
+    /// Verifies that each search result has the required structure (title, URL, snippet).
     /// </summary>
-    /// <returns>True if all results have the required elements.</returns>
+    /// <returns>True if all results have the required elements, false otherwise.</returns>
     public async Task<bool> VerifyResultsStructure()
     {
         var results = SearchResults.Locator("div.MuiPaper-root");
         var count = await results.CountAsync();
-        for (int i = 0; i < count; i++)
+
+        for (var i = 0; i < count; i++)
         {
             var result = results.Nth(i);
             var title = result.Locator("a");
             var url = result.Locator("p.text-green-700");
             var snippet = result.Locator("p.text-slate-700");
+
             if (await title.CountAsync() == 0 || await url.CountAsync() == 0 || await snippet.CountAsync() == 0)
-            {
                 return false;
-            }
         }
+
         return true;
     }
 
     /// <summary>
-    ///     Checks if no results are displayed.
+    /// Checks if no results are displayed on the page.
     /// </summary>
-    /// <returns>True if no results are shown.</returns>
+    /// <returns>True if no results are shown, false otherwise.</returns>
     public async Task<bool> NoResultsDisplayed()
     {
         return await SearchResults.CountAsync() == 0;
     }
 
     /// <summary>
-    ///     Waits for search results to load.
+    /// Waits for search results to load.
     /// </summary>
     public async Task WaitForResultsToLoad()
     {
         await SearchResults.First.WaitForAsync();
-    }
-    
-    /// <summary>
-    ///     Re-locates the search input.
-    /// </summary>
-    /// <returns>The re-located locator.</returns>
-    public ILocator ReLocateSearchInput()
-    {
-        return GetSearchInput();
     }
 }

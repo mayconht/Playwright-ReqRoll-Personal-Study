@@ -1,196 +1,324 @@
-﻿using Microsoft.Playwright;
+using Microsoft.Extensions.Logging;
+using Microsoft.Playwright;
 using Reqnroll;
 
 namespace Playwright_ReqRoll.hooks;
 
-// Maybe for a non english speaker hooks is not a common term. Consider renaming to PlaywrightLifecycleManager or similar.
-// but in essence, hooks is a common term in BDD frameworks for setup/teardown code.
-// so we use hooks here to align with that convention.
-
 /// <summary>
-///     Provides hooks for setting up and tearing down Playwright browser instances and contexts for Reqnroll scenarios.
-///     Manages global browser lifecycle and per-scenario context and page creation.
+/// Manages Playwright lifecycle for Reqnroll scenarios.
+/// Configures browser, context, tracing, screenshots, and videos.
 /// </summary>
 [Binding]
 public partial class PlaywrightHooks
 {
-    /// <summary>
-    ///     The Playwright instance used for browser management.
-    /// </summary>
-    private static IPlaywright _playwright = null!;
+    private static IPlaywright? _playwright;
+    private static IBrowser? _browser;
+    private static IBrowserContext? _context;
+    private static readonly ILogger<PlaywrightHooks> Logger = CreateLogger();
 
     /// <summary>
-    ///     The browser instance launched for the test run.
+    /// Gets the current page for the scenario.
     /// </summary>
-    private static IBrowser _browser = null!;
-
-    /// <summary>
-    ///     The browser context shared across scenarios to keep the browser open for stale element testing.
-    /// </summary>
-    private static IBrowserContext _context = null!;
-
-    /// <summary>
-    ///     Gets the current page instance for the scenario.
-    ///     This is updated for each scenario.
-    /// </summary>
+    /// <exception cref="InvalidOperationException">If page was not initialized.</exception>
     public static IPage Page { get; private set; } = null!;
 
     /// <summary>
-    ///     Sets up the Playwright instance, launches the browser, and creates a shared context.
-    ///     Configures browser type, headless mode, slow motion, and download path based on Config settings.
+    /// Indicates whether Playwright resources have been initialized.
+    /// </summary>
+    public static bool IsInitialized => _playwright != null && _browser != null && _context != null;
+
+    #region Lifecycle Hooks
+
+    /// <summary>
+    /// Initializes Playwright, browser, and shared context before all tests.
     /// </summary>
     [BeforeTestRun]
     public static async Task GlobalSetup()
     {
-        _playwright = await Playwright.CreateAsync();
-        var browserType = Config.BrowserType.ToLower();
-        var browserTypeInstance = browserType switch
+        try
         {
-            "chromium" => _playwright.Chromium,
-            "firefox" => _playwright.Firefox,
-            "webkit" => _playwright.Webkit,
-            _ => _playwright.Chromium
-        };
-        Directory.CreateDirectory(Path.Combine(Config.ReportsPath, Config.DownloadsPath));
-        _browser = await browserTypeInstance.LaunchAsync(
-            new BrowserTypeLaunchOptions
+            Logger.LogInformation("Starting global Playwright setup...");
+
+            _playwright = await Playwright.CreateAsync();
+            var browserType = GetBrowserType();
+
+            Directory.CreateDirectory(Config.FullDownloadsPath);
+
+            _browser = await browserType.LaunchAsync(new BrowserTypeLaunchOptions
             {
                 Headless = Config.Headless,
                 SlowMo = Config.SlowMo,
-                DownloadsPath = Path.Combine(Config.ReportsPath, Config.DownloadsPath)
+                DownloadsPath = Config.FullDownloadsPath
             });
 
-        // Create shared context for all scenarios
-        _context = await _browser.NewContextAsync(new BrowserNewContextOptions
+            _context = await _browser.NewContextAsync(new BrowserNewContextOptions
+            {
+                ColorScheme = ColorScheme.Light,
+                ViewportSize = new ViewportSize
+                {
+                    Width = Config.DefaultViewportWidth,
+                    Height = Config.DefaultViewportHeight
+                },
+                RecordVideoDir = Config.RecordVideo ? Config.FullVideoPath : null,
+                RecordVideoSize = new RecordVideoSize
+                {
+                    Width = Config.DefaultViewportWidth,
+                    Height = Config.DefaultViewportHeight
+                }
+            });
+
+            Logger.LogInformation("Playwright configured successfully. Browser: {BrowserType}, Headless: {Headless}",
+                Config.BrowserType, Config.Headless);
+        }
+        catch (Exception ex)
         {
-            ColorScheme = ColorScheme.Light,
-            ViewportSize = new ViewportSize
-            {
-                Width = 1920,
-                Height = 1080
-            },
-            RecordVideoDir = Config.RecordVideo ? Path.Combine(Config.ReportsPath, Config.VideoDir) : null,
-            RecordVideoSize = new RecordVideoSize
-            {
-                Width = 1920,
-                Height = 1080
-            }
-        });
+            Logger.LogError(ex, "Failed to initialize Playwright");
+            throw;
+        }
     }
 
     /// <summary>
-    ///     Tears down the browser and disposes the Playwright instance after the test run.
+    /// Closes browser and disposes Playwright resources after all tests.
     /// </summary>
     [AfterTestRun]
     public static async Task GlobalTeardown()
     {
-        await _browser.CloseAsync();
-        _playwright.Dispose();
+        try
+        {
+            if (_browser != null)
+            {
+                await _browser.CloseAsync();
+                Logger.LogInformation("Browser closed");
+            }
+
+            _playwright?.Dispose();
+            Logger.LogInformation("Playwright disposed");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error closing Playwright");
+        }
     }
 
     /// <summary>
-    ///     Sets up a new page for each scenario from the shared context.
-    ///     Starts tracing for the scenario.
+    /// Creates a new page and starts tracing before each scenario.
     /// </summary>
     [BeforeScenario]
     public async Task SetupScenario()
     {
-        if (Config.RecordVideo) Directory.CreateDirectory(Path.Combine(Config.ReportsPath, Config.VideoDir));
-
-        if (Config.ScreenshotOnSuccess || Config.ScreenshotOnFailure) Directory.CreateDirectory(Path.Combine(Config.ReportsPath, Config.ScreenshotsDir));
-
-
-        await _context.Tracing.StartAsync(new TracingStartOptions
+        try
         {
-            Screenshots = true,
-            Snapshots = true,
-            Sources = true
-        });
+            EnsureInitialized();
 
-        Page = await _context.NewPageAsync();
+            CreateRequiredDirectories();
+
+            await _context!.Tracing.StartAsync(new TracingStartOptions
+            {
+                Screenshots = true,
+                Snapshots = true,
+                Sources = true
+            });
+
+            Page = await _context.NewPageAsync();
+            Logger.LogInformation("Scenario started - new page created");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error setting up scenario");
+            throw;
+        }
     }
 
-
     /// <summary>
-    ///     Tears down the browser context for each scenario.
-    ///     Stops tracing and saves the trace file if the test failed or if configured to save on pass.
-    ///     Takes screenshots based on configuration settings.
+    /// Saves artifacts (traces, screenshots, videos) and closes page after each scenario.
     /// </summary>
-    /// <param name="scenarioContext">The context of the current scenario, used to check for errors and get scenario title.</param>
+    /// <param name="scenarioContext">Scenario context with error information.</param>
     [AfterScenario]
     public async Task TeardownScenario(ScenarioContext scenarioContext)
     {
-        var scenarioTitle = FilenameSanitizerRegex().Replace(scenarioContext.ScenarioInfo.Title, "");
-        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-
-        if (scenarioContext.TestError != null)
+        try
         {
-            // Take screenshot on failure if configured
-            if (Config.ScreenshotOnFailure)
-            {
-                var screenshotPath = Path.Combine(Config.ReportsPath, Config.ScreenshotsDir, $"{scenarioTitle}_{timestamp}_failed.png");
-                await Page.ScreenshotAsync(new PageScreenshotOptions { Path = screenshotPath, FullPage = true });
-                Console.WriteLine($"Screenshot saved to: {screenshotPath}");
-            }
+            var scenarioTitle = SanitizeFilename(scenarioContext.ScenarioInfo.Title);
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+            var testFailed = scenarioContext.TestError != null;
+            var status = testFailed ? "failed" : "passed";
 
-            var tracePath = Path.Combine(Config.ReportsPath, Config.TracesPath, $"{scenarioTitle}_{timestamp}_failed.zip");
-            Directory.CreateDirectory(Path.GetDirectoryName(tracePath)!);
-            await _context.Tracing.StopAsync(new TracingStopOptions { Path = tracePath });
-            Console.WriteLine($"Test failed. Playwright trace saved to: {tracePath}");
+            await SaveScreenshotIfConfigured(scenarioTitle, timestamp, testFailed);
+            await SaveTraceAsync(scenarioTitle, timestamp, testFailed);
+            await SaveVideoIfConfigured(scenarioTitle, timestamp, status);
+
+            Logger.LogInformation("Scenario completed: {Title} - {Status}", scenarioTitle, status);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error during scenario teardown");
+        }
+        finally
+        {
+            await ClosePageSafely();
+        }
+    }
+
+    #endregion
+
+    #region Helper Methods
+
+    /// <summary>
+    /// Gets the browser type instance based on configuration.
+    /// </summary>
+    /// <returns>Browser type instance.</returns>
+    private static IBrowserType GetBrowserType()
+    {
+        return Config.BrowserType.ToLowerInvariant() switch
+        {
+            "firefox" => _playwright!.Firefox,
+            "webkit" => _playwright!.Webkit,
+            _ => _playwright!.Chromium
+        };
+    }
+
+    /// <summary>
+    /// Verifies that Playwright was initialized correctly.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">If not initialized.</exception>
+    private static void EnsureInitialized()
+    {
+        if (!IsInitialized)
+            throw new InvalidOperationException(
+                "Playwright was not initialized. Verify that GlobalSetup was executed.");
+    }
+
+    /// <summary>
+    /// Creates required directories for artifacts.
+    /// </summary>
+    private static void CreateRequiredDirectories()
+    {
+        if (Config.RecordVideo)
+            Directory.CreateDirectory(Config.FullVideoPath);
+
+        if (Config.ScreenshotOnSuccess || Config.ScreenshotOnFailure)
+            Directory.CreateDirectory(Config.FullScreenshotsPath);
+
+        Directory.CreateDirectory(Config.FullTracesPath);
+    }
+
+    /// <summary>
+    /// Saves screenshot if configured for the test status.
+    /// </summary>
+    /// <param name="scenarioTitle">Sanitized scenario title.</param>
+    /// <param name="timestamp">Timestamp for filename.</param>
+    /// <param name="testFailed">Indicates if test failed.</param>
+    private async Task SaveScreenshotIfConfigured(string scenarioTitle, string timestamp, bool testFailed)
+    {
+        var shouldSave = testFailed ? Config.ScreenshotOnFailure : Config.ScreenshotOnSuccess;
+        if (!shouldSave) return;
+
+        var status = testFailed ? "failed" : "passed";
+        var screenshotPath = Path.Combine(Config.FullScreenshotsPath, $"{scenarioTitle}_{timestamp}_{status}.png");
+
+        await Page.ScreenshotAsync(new PageScreenshotOptions { Path = screenshotPath, FullPage = true });
+        Logger.LogInformation("Screenshot saved: {Path}", screenshotPath);
+    }
+
+    /// <summary>
+    /// Saves the Playwright trace.
+    /// </summary>
+    /// <param name="scenarioTitle">Sanitized scenario title.</param>
+    /// <param name="timestamp">Timestamp for filename.</param>
+    /// <param name="testFailed">Indicates if test failed.</param>
+    private async Task SaveTraceAsync(string scenarioTitle, string timestamp, bool testFailed)
+    {
+        if (testFailed || Config.SaveTracesOnPass)
+        {
+            var status = testFailed ? "failed" : "passed";
+            var tracePath = Path.Combine(Config.FullTracesPath, $"{scenarioTitle}_{timestamp}_{status}.zip");
+
+            await _context!.Tracing.StopAsync(new TracingStopOptions { Path = tracePath });
+            Logger.LogInformation("Trace saved: {Path}", tracePath);
         }
         else
         {
-            // Take screenshot on success if configured
-            if (Config.ScreenshotOnSuccess)
-            {
-                var screenshotPath = Path.Combine(Config.ReportsPath, Config.ScreenshotsDir, $"{scenarioTitle}_{timestamp}_passed.png");
-                await Page.ScreenshotAsync(new PageScreenshotOptions { Path = screenshotPath, FullPage = true });
-                Console.WriteLine($"Screenshot saved to: {screenshotPath}");
-            }
-
-            if (Config.SaveTracesOnPass)
-            {
-                var tracePath = Path.Combine(Config.ReportsPath, Config.TracesPath, $"{scenarioTitle}_{timestamp}_passed.zip");
-                Directory.CreateDirectory(Path.GetDirectoryName(tracePath)!);
-                await _context.Tracing.StopAsync(new TracingStopOptions { Path = tracePath });
-                Console.WriteLine($"Test passed. Playwright trace saved to: {tracePath}");
-            }
-            else
-            {
-                await _context.Tracing.StopAsync();
-                Console.WriteLine("Test passed. No trace saved.");
-            }
+            await _context!.Tracing.StopAsync();
+            Logger.LogDebug("Trace discarded (test passed and SaveTracesOnPass=false)");
         }
+    }
 
-        if (Config.RecordVideo)
+    /// <summary>
+    /// Saves and renames video if configured.
+    /// </summary>
+    /// <param name="scenarioTitle">Sanitized scenario title.</param>
+    /// <param name="timestamp">Timestamp for filename.</param>
+    /// <param name="status">Test status (passed/failed).</param>
+    private async Task SaveVideoIfConfigured(string scenarioTitle, string timestamp, string status)
+    {
+        if (!Config.RecordVideo || Page.Video == null) return;
+
+        try
         {
-            var videoPath = await Page.Video!.PathAsync();
+            var videoPath = await Page.Video.PathAsync();
             var videoDir = Path.GetDirectoryName(videoPath)!;
-            var status = scenarioContext.TestError != null ? "failed" : "passed";
             var newVideoPath = Path.Combine(videoDir, $"{scenarioTitle}_{timestamp}_{status}.webm");
 
             await Page.CloseAsync();
-
-            await Task.Delay(2000); // Increased delay to ensure video file is fully written
+            await Task.Delay(Config.VideoWriteDelayMs);
 
             if (File.Exists(videoPath))
             {
                 File.Move(videoPath, newVideoPath);
-                Console.WriteLine($"Video saved to: {newVideoPath}");
+                Logger.LogInformation("Video saved: {Path}", newVideoPath);
             }
         }
-        else
+        catch (Exception ex)
         {
-            await Page.CloseAsync();
+            Logger.LogWarning(ex, "Could not save video");
         }
     }
 
-    //TODO: Move to a utility class if needed elsewhere
     /// <summary>
-    ///     Provides a regex for sanitizing filenames by replacing non-alphanumeric characters (except underscores) with
-    ///     underscores.
+    /// Closes the page safely.
     /// </summary>
-    /// <returns>A compiled regex for filename sanitization.</returns>
+    private async Task ClosePageSafely()
+    {
+        try
+        {
+            if (Page is { IsClosed: false }) await Page.CloseAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Error closing page");
+        }
+    }
+
+    /// <summary>
+    /// Sanitizes string for use in filenames.
+    /// </summary>
+    /// <param name="filename">Name to sanitize.</param>
+    /// <returns>Sanitized name with only alphanumeric characters and underscores.</returns>
+    private static string SanitizeFilename(string filename)
+    {
+        return FilenameSanitizerRegex().Replace(filename, "_");
+    }
+
+    /// <summary>
+    /// Creates logger instance for the class.
+    /// </summary>
+    /// <returns>Configured logger.</returns>
+    private static ILogger<PlaywrightHooks> CreateLogger()
+    {
+        using var loggerFactory = LoggerFactory.Create(builder =>
+        {
+            builder.AddConsole();
+            builder.SetMinimumLevel(LogLevel.Information);
+        });
+        return loggerFactory.CreateLogger<PlaywrightHooks>();
+    }
+
+    /// <summary>
+    /// Compiled regex for filename sanitization.
+    /// Replaces non-alphanumeric characters with underscore.
+    /// </summary>
     [GeneratedRegex("[^a-zA-Z0-9_]")]
     private static partial Regex FilenameSanitizerRegex();
+
+    #endregion
 }
