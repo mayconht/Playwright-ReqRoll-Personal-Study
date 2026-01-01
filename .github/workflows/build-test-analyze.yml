@@ -66,11 +66,10 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright/dotnet:v1.55.0-noble
-      # options: --user 1001 --ipc=host
+      options: --ipc=host
 
     env:
       CI: true
-      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/browsers
       REPORTS__PATH: ${{ github.workspace }}/reports
       TRACING__TRACESPATH: Playwright-Traces
       VIDEO__DIR: Playwright-Videos
