@@ -1,5 +1,4 @@
-﻿#LF stands for Login Flow or Login Feature
-#https://www.cnarios.com/challenges/login-flow
+﻿#https://www.cnarios.com/challenges/login-flow
 
 @Login
 Feature: Login Flow

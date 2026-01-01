@@ -51,10 +51,10 @@ So that I can send items through the Isle of Man Post Office
           | Destination    | Weight | Format | PostingMethod                     | ItemType | Service               | RecipientName | RecipientAddress | RecipientTown | RecipientPostcode | SendingToBusiness | FirstName | LastName |
           | United Kingdom | 50     | Grams  | Drop off at a Post Office counter | Letter   | United Kingdom Letter | Test Corp     | 123 Main St      | PATHHEAD      | EH37 5PT          | true              | User1     | Name1    |
 
-       # Examples: UK Special Delivery
-       #   | Destination    | Weight | Format | PostingMethod                     | ItemType | Service                            | RecipientName | RecipientAddress | RecipientTown | RecipientPostcode | SendingToBusiness | FirstName | LastName |
-       #   | United Kingdom | 50     | Grams  | Drop off at a Post Office counter | Letter   | Special Delivery Two Day by 5.30pm | Fast Co       | UNIT M3A         | BICESTER      | OX26 4LD          | false             | User1     | Name1    |
+          # Examples: UK Special Delivery
+          #   | Destination    | Weight | Format | PostingMethod                     | ItemType | Service                            | RecipientName | RecipientAddress | RecipientTown | RecipientPostcode | SendingToBusiness | FirstName | LastName |
+          #   | United Kingdom | 50     | Grams  | Drop off at a Post Office counter | Letter   | Special Delivery Two Day by 5.30pm | Fast Co       | UNIT M3A         | BICESTER      | OX26 4LD          | false             | User1     | Name1    |
 
         Examples: UK Parcel Services
           | Destination    | Weight | Format | PostingMethod                     | ItemType | Service               | RecipientName | RecipientAddress | RecipientTown | RecipientPostcode | SendingToBusiness | FirstName | LastName |
-          | United Kingdom | 1      | Kg     | Drop off at a Post Office counter | Letter   | United Kingdom Letter | Test Corp     | 123 Main St      | PATHHEAD      | EH37 5PT          | false           | User1     | Name1    |
+          | United Kingdom | 1      | Kg     | Drop off at a Post Office counter | Letter   | United Kingdom Letter | Test Corp     | 123 Main St      | PATHHEAD      | EH37 5PT          | false             | User1     | Name1    |

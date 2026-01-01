@@ -57,7 +57,7 @@ jobs:
 
     env:
       CI: true
-      REPORTS__PATH: ${{ github.workspace }}/reports
+      REPORTS__PATH: ./reports
       TRACING__TRACESPATH: Playwright-Traces
       VIDEO__DIR: Playwright-Videos
       SCREENSHOTS__DIR: Playwright-Screenshots
@@ -89,14 +89,14 @@ jobs:
         run: |
           dotnet test --configuration Release --no-build \
             --logger "trx;LogFileName=test-results.trx" \
-            --results-directory "${{ github.workspace }}/TestResults"
+            --results-directory "./TestResults"
         continue-on-error: true
 
       - name: Publish Test Results
         if: always()
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          files: '${{ github.workspace }}/TestResults/**/*.trx'
+          files: 'TestResults/**/*.trx'
           check_name: 'Playwright-ReqRoll Tests - ${{ env.BROWSER__TYPE }}'
           comment_title: 'Playwright-ReqRoll Test Results'
           comment_mode: always
@@ -110,7 +110,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: ${{ github.workspace }}/TestResults/
+          path: TestResults/
           if-no-files-found: ignore
 
       - name: Publish Playwright Traces
@@ -118,7 +118,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-traces
-          path: ${{ github.workspace }}/reports/Playwright-Traces/
+          path: reports/Playwright-Traces/
           if-no-files-found: ignore
 
       - name: Publish Playwright Videos
@@ -126,7 +126,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-videos
-          path: ${{ github.workspace }}/reports/Playwright-Videos/
+          path: reports/Playwright-Videos/
           if-no-files-found: ignore
 
       - name: Publish Playwright Screenshots
@@ -134,7 +134,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-screenshots
-          path: ${{ github.workspace }}/reports/Playwright-Screenshots/
+          path: reports/Playwright-Screenshots/
           if-no-files-found: ignore
 
       - name: Check test status

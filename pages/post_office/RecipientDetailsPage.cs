@@ -131,7 +131,7 @@ public class RecipientDetailsPage(IPage page) : BasePage(page)
     public async Task SetSendingToBusiness(bool isBusiness)
     {
         await BusinessToggleLabel.ClickAsync();
-        if(isBusiness)
+        if (isBusiness)
             await BusinessToggleLabel.SetCheckedAsync(isBusiness);
     }
 
@@ -150,7 +150,6 @@ public class RecipientDetailsPage(IPage page) : BasePage(page)
     {
         await LastNameInput.FillAsync(lastName);
     }
-    
 }
 
 /// <summary>
