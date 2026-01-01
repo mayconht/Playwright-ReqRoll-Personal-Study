@@ -7,9 +7,10 @@
 
 # Playwright-ReqRoll
 
-A simple UI automation testing framework using Playwright and Reqnroll (BDD) for web applications. 
+A simple UI automation testing framework using Playwright and Reqnroll (BDD) for web applications.
 
-This project is part of my study portfolio, showcasing skills in automated testing, BDD, and handling complex UI scenarios. 
+This project is part of my study portfolio, showcasing skills in automated testing, BDD, and handling complex UI
+scenarios.
 Keep in mind some implementations are simplified, or might not be right due to limitations of both knowledge or time.
 So if you come across something that could be improved, please feel free to open an issue or a PR.
 
@@ -47,15 +48,16 @@ The project follows a structured approach for UI automation testing:
 
 ## Dev Container (VS Code / Codespaces)
 
-This repo includes a ready-to-use Dev Container to get you coding and running tests fast, with everything pinned for .NET 8 and Playwright.
+This repo includes a ready-to-use Dev Container to get you coding and running tests fast, with everything pinned for
+.NET 8 and Playwright.
 
 - Base image: `mcr.microsoft.com/devcontainers/dotnet:1-8.0`
 - Auto steps on first open: restore, build, install Playwright browsers, and run tests
 - VS Code extensions preinstalled:
-   - `ms-dotnettools.csdevkit`
-   - `ms-playwright.playwright`
-   - `alexkrechik.cucumberautocomplete`
-   - `tal7aouy.rainbow-brackets`
+    - `ms-dotnettools.csdevkit`
+    - `ms-playwright.playwright`
+    - `alexkrechik.cucumberautocomplete`
+    - `tal7aouy.rainbow-brackets`
 
 How to use:
 
@@ -69,7 +71,9 @@ How to use:
 
 Notes and troubleshooting:
 
-- The Playwright install script path uses your target framework. This project targets `net8.0`, so the script is generated at `bin/Debug/net8.0/playwright.ps1` (Windows/PowerShell). If you change the target framework, update any references accordingly.
+- The Playwright install script path uses your target framework. This project targets `net8.0`, so the script is
+  generated at `bin/Debug/net8.0/playwright.ps1` (Windows/PowerShell). If you change the target framework, update any
+  references accordingly.
 - On first run inside a fresh container, browser downloads can take a few minutes.
 - If tests fail during container creation, re-run them after the browsers finish installing.
 
@@ -101,11 +105,13 @@ The tests target external web applications:
 ## Running Tests
 
 ### Run all tests:
+
 ```bash
 dotnet test
 ```
 
 ### Run specific test categories:
+
 ```bash
 # Run only login tests
 dotnet test --filter "Category=Login"
@@ -115,7 +121,9 @@ dotnet test --filter "Category=Search"
 ```
 
 ### Run with specific browser:
+
 Modify `appsettings.json` to set the desired browser:
+
 ```json
 {
   "BrowserType": "chromium", // or "firefox", "webkit"
@@ -181,10 +189,13 @@ Test frameworks used:
 5. Open a Pull Request
 
 ## Troubleshooting
+
 Ops, not yet.
+
 ### Common Issues
 
-1. Browser not found: Verify if Playwright browsers are installed with `dotnet run --project Playwright-ReqRoll.csproj -- install`
+1. Browser not found: Verify if Playwright browsers are installed with
+   `dotnet run --project Playwright-ReqRoll.csproj -- install`
 
 2. Video file locked: Increased delay in teardown to ensure files are fully written
 
@@ -193,10 +204,12 @@ Ops, not yet.
 Traces are generated for failed tests and can be viewed to debug issues:
 
 ### Online Trace Viewer
+
 1. Go to [Playwright Trace Viewer](https://trace.playwright.dev/)
 2. Upload the `.zip` trace file from `<Your_Dir>\Playwright-Traces\`
 
 ### Local Trace Viewer
+
 1. Install Playwright for .NET if not already:
    ```bash
    dotnet tool install --global Microsoft.Playwright.CLI

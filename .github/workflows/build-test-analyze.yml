@@ -1,4 +1,4 @@
-﻿name: Build, Test and Analyze
+﻿name: Playwright-ReqRoll Tests
 
 on:
   workflow_dispatch:
@@ -17,11 +17,6 @@ on:
         required: false
         default: true
         type: boolean
-      categories:
-        description: 'Test categories to run (e.g., Login,Search)'
-        required: false
-        default: 'Login,Search'
-        type: string
       enable_tracing:
         description: 'Enable tracing'
         required: false
@@ -38,22 +33,30 @@ on:
         default: true
         type: boolean
   push:
-    branches: [ main, master, develop, dev ]
+    branches: [ master, dev ]
   pull_request:
-    branches: [ main, master, develop, dev ]
+    branches: [ master, dev ]
     types: [opened, synchronize, reopened]
-    
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-test-analyze:
-    name: Build, Test and Analyze
-    runs-on: ubuntu-latest    
+  build-and-test:
+    name: 'Build and Test'
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright/dotnet:v1.55.0-noble
+      options: --ipc=host
+
     env:
       CI: true
-      PLAYWRIGHT_BROWSERS_PATH: ./browsers
       REPORTS__PATH: ${{ github.workspace }}/reports
       TRACING__TRACESPATH: Playwright-Traces
       VIDEO__DIR: Playwright-Videos
@@ -64,50 +67,97 @@ jobs:
       TRACING__SAVEONPASS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.enable_tracing || 'true' }}
       VIDEO__RECORD: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.enable_video || 'true' }}
       SCREENSHOTS__ONSUCCESS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.enable_screenshots || 'true' }}
-      SCREENSHOTS__ONFAILURE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.enable_screenshots || 'true' }}
-    
+      SCREENSHOTS__ONFAILURE: 'true'
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup dotnet
-      uses: actions/setup-dotnet@v5
-      with:
-        dotnet-version: 8.0.x
-        
-    - name: Cache Playwright browsers
-      uses: actions/cache@v4
-      with:
-        path: ${{ github.workspace }}/browsers
-        key: ${{ runner.os }}-playwright-local
-        restore-keys: |
-          ${{ runner.os }}-playwright-
-        
-    - name: Build & Install
-      run: dotnet build
-      
-    - name: Install browsers
-      run: PLAYWRIGHT_BROWSERS_PATH=${{ github.workspace }}/browsers pwsh bin/Debug/net8.0/playwright.ps1 install --with-deps --only-shell 
-      
-    - name: Run Tests
-      run: PLAYWRIGHT_BROWSERS_PATH=${{ github.workspace }}/browsers dotnet test --logger trx --results-directory ./TestResults/
+      - name: Setup .NET SDK 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
 
-    - name: Publish test results
-      uses: EnricoMi/publish-unit-test-result-action@v2
-      if: always()
-      with:
-        files: TestResults/**/*.trx
+      - name: Restore NuGet packages
+        run: dotnet restore
 
-    - name: Upload test artifacts
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-results
-        path: TestResults/
+      - name: Build solution
+        run: dotnet build --configuration Release --no-restore
 
-    - name: Upload Playwright artifacts
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: playwright-artifacts
-        path: reports/
+      - name: Create reports directories
+        run: |
+          mkdir -p ${{ github.workspace }}/reports/Playwright-Traces
+          mkdir -p ${{ github.workspace }}/reports/Playwright-Videos
+          mkdir -p ${{ github.workspace }}/reports/Playwright-Screenshots
+          mkdir -p ${{ github.workspace }}/TestResults
+
+      - name: Run Tests
+        id: run-tests
+        run: |
+          dotnet test --configuration Release --no-build \
+            --logger "trx;LogFileName=test-results.trx" \
+            --results-directory "${{ github.workspace }}/TestResults"
+        continue-on-error: true
+
+      - name: List reports directory
+        if: always()
+        run: |
+          echo "=== Current directory ==="
+          pwd
+          echo "=== Workspace ==="
+          echo "${{ github.workspace }}"
+          echo "=== Reports directory structure ==="
+          find ${{ github.workspace }}/reports -type f 2>/dev/null || echo "No files found in reports"
+          echo "=== TestResults directory ==="
+          find ${{ github.workspace }}/TestResults -type f 2>/dev/null || echo "No files found in TestResults"
+
+      - name: Publish Test Results
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: '${{ github.workspace }}/TestResults/**/*.trx'
+          check_name: 'Playwright-ReqRoll Tests - ${{ env.BROWSER__TYPE }}'
+          comment_title: 'Playwright-ReqRoll Test Results'
+          comment_mode: always
+          report_individual_runs: true
+          compare_to_earlier_commit: true
+          check_run_annotations: all tests, skipped tests
+          job_summary: true
+
+      - name: Publish Test Results Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ${{ github.workspace }}/TestResults/
+          if-no-files-found: ignore
+
+      - name: Publish Playwright Traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: ${{ github.workspace }}/reports/Playwright-Traces/
+          if-no-files-found: ignore
+
+      - name: Publish Playwright Videos
+        if: ${{ always() && env.VIDEO__RECORD == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-videos
+          path: ${{ github.workspace }}/reports/Playwright-Videos/
+          if-no-files-found: ignore
+
+      - name: Publish Playwright Screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-screenshots
+          path: ${{ github.workspace }}/reports/Playwright-Screenshots/
+          if-no-files-found: ignore
+
+      - name: Check test status
+        if: steps.run-tests.outcome == 'failure'
+        run: |
+          echo "::error::Playwright tests failed!"
+          exit 1

@@ -1,51 +1,44 @@
-﻿using Microsoft.Playwright;
+using Microsoft.Playwright;
+using Playwright_ReqRoll.pages;
 
 namespace Playwright_ReqRoll.pages.login;
 
-/*Many methods that exists here are just example on how to wrap user actions or create a user action for easier handling
- in code development, so I am forgiving on how granular this sounds, as this is an experimenting project
- if you want to understand why the wrap might be needed, have a look at the last method of this file*/
-
 /// <summary>
-///     Represents the Login page in the application, providing methods to interact with login form elements.
-///     Uses Playwright locators to find and manipulate page elements.
+/// Page Object for the Login page in the application.
+/// Provides methods to interact with login form elements and verify authentication state.
 /// </summary>
-public class LoginPageLocators(IPage page)
+public class LoginPageLocators : BasePage
 {
     /// <summary>
-    ///     Gets the locator for the username textbox.
+    /// Initializes a new instance of the LoginPageLocators class.
     /// </summary>
+    /// <param name="page">The Playwright page instance.</param>
+    public LoginPageLocators(IPage page) : base(page)
+    {
+    }
+
     private ILocator UsernameTextbox =>
-        page.GetByRole(AriaRole.Textbox, new PageGetByRoleOptions { Name = "Username" });
+        Page.GetByRole(AriaRole.Textbox, new PageGetByRoleOptions { Name = "Username" });
 
-    /// <summary>
-    ///     Gets the locator for the password textbox.
-    /// </summary>
     private ILocator PasswordTextbox =>
-        page.GetByRole(AriaRole.Textbox, new PageGetByRoleOptions { Name = "Password" });
+        Page.GetByRole(AriaRole.Textbox, new PageGetByRoleOptions { Name = "Password" });
+
+    private ILocator LoginButton =>
+        Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Login" });
+
+    private ILocator PasswordVisibilityToggle =>
+        Page.Locator("button[aria-label='Toggle password visibility']");
+
+    private ILocator WelcomeHeading =>
+        Page.GetByRole(AriaRole.Heading, new PageGetByRoleOptions { Level = 5 });
+
+    private ILocator LoggedInAlert => Page.Locator(".MuiAlert-message");
+
+    private ILocator LogoutButton =>
+        Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Logout" });
 
     /// <summary>
-    ///     Gets the locator for the login button.
-    /// </summary>
-    private ILocator LoginButton => page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Login" });
-
-    /// <summary>
-    ///     Gets the locator for the password visibility toggle button.
-    /// </summary>
-    private ILocator PasswordVisibilityToggle => page.Locator("button[aria-label='Toggle password visibility']");
-
-    /// <summary>
-    ///     Gets the locator for the welcome heading after login.
-    /// </summary>
-    private ILocator WelcomeHeading => page.GetByRole(AriaRole.Heading, new PageGetByRoleOptions { Level = 5 });
-
-    /// <summary>
-    ///     Gets the locator for the logged-in alert message.
-    /// </summary>
-    private ILocator LoggedInAlert => page.Locator(".MuiAlert-message");
-
-    /// <summary>
-    ///     Enters the specified username into the username textbox.
+    /// Enters the specified username into the username textbox.
     /// </summary>
     /// <param name="username">The username to enter.</param>
     public async Task EnterUsername(string username)
@@ -54,7 +47,7 @@ public class LoginPageLocators(IPage page)
     }
 
     /// <summary>
-    ///     Enters the specified password into the password textbox.
+    /// Enters the specified password into the password textbox.
     /// </summary>
     /// <param name="password">The password to enter.</param>
     public async Task EnterPassword(string password)
@@ -63,7 +56,7 @@ public class LoginPageLocators(IPage page)
     }
 
     /// <summary>
-    ///     Clicks the login button to submit the login form.
+    /// Clicks the login button to submit the login form.
     /// </summary>
     public async Task ClickLoginButton()
     {
@@ -71,7 +64,7 @@ public class LoginPageLocators(IPage page)
     }
 
     /// <summary>
-    ///     Clicks the password visibility toggle button to show/hide the password.
+    /// Clicks the password visibility toggle button to show/hide the password.
     /// </summary>
     public async Task ClickPasswordVisibilityToggle()
     {
@@ -79,16 +72,16 @@ public class LoginPageLocators(IPage page)
     }
 
     /// <summary>
-    ///     Waits for the specified error message to appear on the page.
+    /// Waits for the specified error message to appear on the page.
     /// </summary>
     /// <param name="message">The error message text to wait for.</param>
     public async Task WaitForErrorMessage(string message)
     {
-        await page.GetByText(message).WaitForAsync();
+        await Page.GetByText(message).WaitForAsync();
     }
 
     /// <summary>
-    ///     Asserts that the password field has the 'type' attribute set to 'text', indicating visibility.
+    /// Asserts that the password field has the 'type' attribute set to 'text', indicating visibility.
     /// </summary>
     public async Task AssertPasswordFieldVisibleAsText()
     {
@@ -96,8 +89,8 @@ public class LoginPageLocators(IPage page)
     }
 
     /// <summary>
-    ///     Asserts that the dashboard is displayed for the specified user.
-    ///     Checks for welcome message and logged-in alert containing the username.
+    /// Asserts that the dashboard is displayed for the specified user.
+    /// Checks for welcome message and logged-in alert containing the username.
     /// </summary>
     /// <param name="userName">The username to verify in the dashboard messages.</param>
     public async Task AssertDashboardForUser(string userName)
@@ -117,30 +110,29 @@ public class LoginPageLocators(IPage page)
     }
 
     /// <summary>
-    ///     Clicks the logout button to log out the user.
+    /// Clicks the logout button to log out the user.
     /// </summary>
     public async Task ClickLogoutButton()
     {
-        var logoutButton = page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Logout" });
-        await logoutButton.ClickAsync();
+        await LogoutButton.ClickAsync();
     }
 
     /// <summary>
-    ///     Gets all cookies from the current browser context.
+    /// Gets all cookies from the current browser context.
     /// </summary>
     /// <returns>A list of all cookies in the current context.</returns>
     public async Task<IReadOnlyList<BrowserContextCookiesResult>> GetCookies()
     {
-        return await page.Context.CookiesAsync();
+        return await Page.Context.CookiesAsync();
     }
 
     /// <summary>
-    ///     Gets cookies for a specific URL from the current browser context.
+    /// Gets cookies for a specific URL from the current browser context.
     /// </summary>
     /// <param name="url">The URL to get cookies for.</param>
     /// <returns>A list of cookies for the specified URL.</returns>
     public async Task<IReadOnlyList<BrowserContextCookiesResult>> GetCookies(string url)
     {
-        return await page.Context.CookiesAsync(new[] { url });
+        return await Page.Context.CookiesAsync(new[] { url });
     }
 }
