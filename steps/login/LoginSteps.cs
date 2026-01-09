@@ -100,7 +100,6 @@ public class LoginSteps
             c.Name.Contains("user", StringComparison.OrdinalIgnoreCase)
         ).ToList();
 
-        Assert.That(sessionCookies, Is.Empty,
-            $"Expected session cookies to be cleared after logout, but found: {string.Join(", ", sessionCookies.Select(c => c.Name))}");
+        Assert.That(sessionCookies, Is.Empty, $"Expected session cookies to be cleared after logout, but found: {string.Join(", ", sessionCookies.Select(c => c.Name))}");
     }
 }
