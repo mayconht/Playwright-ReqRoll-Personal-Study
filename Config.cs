@@ -13,22 +13,22 @@ public static class Config
     /// <summary>
     /// Default viewport width in pixels.
     /// </summary>
-    public const int DefaultViewportWidth = 1920;
+    private const int DefaultViewportWidth = 1920;
 
     /// <summary>
     /// Default viewport height in pixels.
     /// </summary>
-    public const int DefaultViewportHeight = 1080;
+    private const int DefaultViewportHeight = 1080;
 
     /// <summary>
     /// Default delay in milliseconds to wait for video file writing.
     /// </summary>
-    public const int DefaultVideoWriteDelayMs = 2000;
+    private const int DefaultVideoWriteDelayMs = 2000;
 
     /// <summary>
     /// Default browser type.
     /// </summary>
-    public const string DefaultBrowserType = "chromium";
+    private const string DefaultBrowserType = "chromium";
 
     #endregion
 
@@ -60,23 +60,79 @@ public static class Config
     /// Gets whether the browser should run in headless mode.
     /// </summary>
     /// <value>True for headless, false for visual mode. Default: false.</value>
-    public static bool Headless => ParseBool(Configuration["Browser:Headless"], false);
+    public static bool Headless => bool.TryParse(Configuration["Browser:Headless"], out var result) && result;
 
     /// <summary>
     /// Gets the delay in milliseconds between browser actions (slow motion).
     /// </summary>
     /// <value>Delay in ms. Default: 0.</value>
-    public static int SlowMo => ParseInt(Configuration["Browser:SlowMo"], 0);
+    public static int SlowMo => int.TryParse(Configuration["Browser:SlowMo"], out var result) ? result : 0;
 
     #endregion
 
-    #region Base URLs
+    #region Emulation Settings
 
     /// <summary>
-    /// Gets the login page URL.
+    /// Gets the device type for emulation (Desktop, iPhone 13, Pixel 5, etc.).
+    /// Use "Desktop" for desktop browser or a Playwright device name for mobile emulation.
     /// </summary>
-    /// <value>Login page URL. Default: "https://example.com/login".</value>
-    public static string LoginPageUrl => Configuration["BaseUrls:LoginPage"] ?? "https://example.com/login";
+    /// <value>Device name. Default: "Desktop".</value>
+    public static string Device => Configuration["Emulation:Device"] ?? "Desktop";
+
+    /// <summary>
+    /// Gets whether mobile emulation is enabled.
+    /// Automatically inferred from Device - true if Device is not "Desktop".
+    /// </summary>
+    /// <value>True for mobile, false for desktop.</value>
+    public static bool IsMobile => !Device.Equals("Desktop", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Gets the viewport width for browser emulation.
+    /// </summary>
+    /// <value>Width in pixels. Default: 1920.</value>
+    public static int ViewportWidth => int.TryParse(Configuration["Emulation:Viewport:Width"], out var result) ? result : DefaultViewportWidth;
+
+    /// <summary>
+    /// Gets the viewport height for browser emulation.
+    /// </summary>
+    /// <value>Height in pixels. Default: 1080.</value>
+    public static int ViewportHeight => int.TryParse(Configuration["Emulation:Viewport:Height"], out var result) ? result : DefaultViewportHeight;
+
+    /// <summary>
+    /// Gets the locale for emulation (e.g., "pt-BR", "en-US").
+    /// </summary>
+    /// <value>Locale string. Default: "pt-BR".</value>
+    public static string Locale => Configuration["Emulation:Locale"] ?? "pt-BR";
+
+    /// <summary>
+    /// Gets the timezone ID for emulation (e.g., "America/Sao_Paulo").
+    /// </summary>
+    /// <value>Timezone ID. Default: "America/Sao_Paulo".</value>
+    public static string TimezoneId => Configuration["Emulation:TimezoneId"] ?? "America/Sao_Paulo";
+
+    /// <summary>
+    /// Gets whether geolocation emulation is enabled.
+    /// </summary>
+    /// <value>True to enable geolocation, false otherwise. Default: false.</value>
+    public static bool GeolocationEnabled => bool.TryParse(Configuration["Emulation:Geolocation:Enabled"], out var result) && result;
+
+    /// <summary>
+    /// Gets the geolocation latitude for emulation.
+    /// </summary>
+    /// <value>Latitude coordinate. Default: -23.5505 (São Paulo).</value>
+    public static double GeolocationLatitude => double.TryParse(Configuration["Emulation:Geolocation:Latitude"], out var result) ? result : -23.5505;
+
+    /// <summary>
+    /// Gets the geolocation longitude for emulation.
+    /// </summary>
+    /// <value>Longitude coordinate. Default: -46.6333 (São Paulo).</value>
+    public static double GeolocationLongitude => double.TryParse(Configuration["Emulation:Geolocation:Longitude"], out var result) ? result : -46.6333;
+
+    /// <summary>
+    /// Gets the color scheme for emulation (light, dark, or no-preference).
+    /// </summary>
+    /// <value>Color scheme. Default: "light".</value>
+    public static string ColorSchemeString => Configuration["Emulation:ColorScheme"] ?? "light";
 
     #endregion
 
@@ -86,13 +142,13 @@ public static class Config
     /// Gets whether to save traces for passed tests.
     /// </summary>
     /// <value>True to save, false to skip. Default: false.</value>
-    public static bool SaveTracesOnPass => ParseBool(Configuration["Tracing:SaveOnPass"], false);
+    public static bool SaveTracesOnPass => !bool.TryParse(Configuration["Tracing:SaveOnPass"], out var result) || result;
 
     /// <summary>
     /// Gets the relative directory where traces are saved.
     /// </summary>
     /// <value>Directory name. Default: "Playwright-Traces".</value>
-    public static string TracesPath => Configuration["Tracing:TracesPath"] ?? "Playwright-Traces";
+    private static string TracesPath => Configuration["Tracing:TracesPath"] ?? "Playwright-Traces";
 
     /// <summary>
     /// Gets the full path to the traces directory.
@@ -108,13 +164,13 @@ public static class Config
     /// Gets whether to record videos for scenarios.
     /// </summary>
     /// <value>True to record, false to skip. Default: false.</value>
-    public static bool RecordVideo => ParseBool(Configuration["Video:Record"], false);
+    public static bool RecordVideo => bool.TryParse(Configuration["Video:Record"], out var result) && result;
 
     /// <summary>
     /// Gets the relative directory where videos are saved.
     /// </summary>
     /// <value>Directory name. Default: "Playwright-Videos".</value>
-    public static string VideoDir => Configuration["Video:Dir"] ?? "Playwright-Videos";
+    private static string VideoDir => Configuration["Video:Dir"] ?? "Playwright-Videos";
 
     /// <summary>
     /// Gets the full path to the videos directory.
@@ -126,7 +182,7 @@ public static class Config
     /// Gets the delay in ms to wait for video file writing.
     /// </summary>
     /// <value>Delay in ms. Default: 2000.</value>
-    public static int VideoWriteDelayMs => ParseInt(Configuration["Video:WriteDelayMs"], DefaultVideoWriteDelayMs);
+    public static int VideoWriteDelayMs => int.TryParse(Configuration["Video:WriteDelayMs"], out var result) ? result : DefaultVideoWriteDelayMs;
 
     #endregion
 
@@ -136,19 +192,19 @@ public static class Config
     /// Gets whether to capture screenshots on successful tests.
     /// </summary>
     /// <value>True to capture, false to skip. Default: false.</value>
-    public static bool ScreenshotOnSuccess => ParseBool(Configuration["Screenshots:OnSuccess"], false);
+    public static bool ScreenshotOnSuccess => bool.TryParse(Configuration["Screenshots:OnSuccess"], out var result) && result;
 
     /// <summary>
     /// Gets whether to capture screenshots on failed tests.
     /// </summary>
     /// <value>True to capture, false to skip. Default: true.</value>
-    public static bool ScreenshotOnFailure => ParseBool(Configuration["Screenshots:OnFailure"], true);
+    public static bool ScreenshotOnFailure => !bool.TryParse(Configuration["Screenshots:OnFailure"], out var result) || result;
 
     /// <summary>
     /// Gets the relative directory where screenshots are saved.
     /// </summary>
     /// <value>Directory name. Default: "Screenshots".</value>
-    public static string ScreenshotsDir => Configuration["Screenshots:Dir"] ?? "Screenshots";
+    private static string ScreenshotsDir => Configuration["Screenshots:Dir"] ?? "Screenshots";
 
     /// <summary>
     /// Gets the full path to the screenshots directory.
@@ -158,51 +214,25 @@ public static class Config
 
     #endregion
 
-    #region Paths
+    #region Reporting Settings
 
     /// <summary>
     /// Gets the base path for saving reports (traces, videos, screenshots).
     /// </summary>
     /// <value>Directory path. Default: current execution directory.</value>
-    public static string ReportsPath => Configuration["Reports:Path"] ?? Directory.GetCurrentDirectory();
+    private static string ReportsPath => Configuration["Reports:Path"] ?? Directory.GetCurrentDirectory();
 
     /// <summary>
     /// Gets the directory where browser downloads are saved.
     /// </summary>
     /// <value>Directory path. Default: "Downloads".</value>
-    public static string DownloadsPath => Configuration["Downloads:Path"] ?? "Downloads";
+    private static string DownloadsPath => Configuration["Downloads:Path"] ?? "Downloads";
 
     /// <summary>
     /// Gets the full path to the downloads directory.
     /// </summary>
     /// <value>Absolute path combining ReportsPath and DownloadsPath.</value>
     public static string FullDownloadsPath => Path.Combine(ReportsPath, DownloadsPath);
-
-    #endregion
-
-    #region Helper Methods
-
-    /// <summary>
-    /// Safely parses a string to bool with a default value.
-    /// </summary>
-    /// <param name="value">String to convert.</param>
-    /// <param name="defaultValue">Default value if conversion fails.</param>
-    /// <returns>Parsed boolean value or default.</returns>
-    private static bool ParseBool(string? value, bool defaultValue)
-    {
-        return bool.TryParse(value, out var result) ? result : defaultValue;
-    }
-
-    /// <summary>
-    /// Safely parses a string to int with a default value.
-    /// </summary>
-    /// <param name="value">String to convert.</param>
-    /// <param name="defaultValue">Default value if conversion fails.</param>
-    /// <returns>Parsed integer value or default.</returns>
-    private static int ParseInt(string? value, int defaultValue)
-    {
-        return int.TryParse(value, out var result) ? result : defaultValue;
-    }
 
     #endregion
 }

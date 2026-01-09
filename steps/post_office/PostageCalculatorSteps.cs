@@ -183,14 +183,6 @@ public class PostageCalculatorSteps
     }
 
     /// <summary>
-    /// Fills recipient details with auto-generated fake data.
-    /// </summary>
-    [When(@"I fill recipient details with fake data")]
-    public async Task WhenIFillRecipientDetailsWithFakeData()
-    {
-    }
-
-    /// <summary>
     /// Enters the recipient company name.
     /// </summary>
     /// <param name="company">The company name to enter.</param>
@@ -246,7 +238,7 @@ public class PostageCalculatorSteps
     [When(@"I select the first address from results")]
     public async Task WhenISelectTheFirstAddressFromResults()
     {
-        await RecipientDetailsPage.SelectAddressFromResults(0);
+        await RecipientDetailsPage.SelectAddressFromResults();
     }
 
 

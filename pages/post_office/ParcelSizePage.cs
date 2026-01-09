@@ -1,5 +1,4 @@
 using Microsoft.Playwright;
-using Playwright_ReqRoll.pages;
 
 namespace Playwright_ReqRoll.pages.post_office;
 
@@ -70,13 +69,5 @@ public class ParcelSizePage : BasePage
         };
 
         await locator.ClickAsync(new LocatorClickOptions { Force = true });
-    }
-
-    /// <summary>
-    /// Waits for this page to load.
-    /// </summary>
-    public async Task WaitForPage()
-    {
-        await WaitForUrlAsync("**/my-order/parcel-size**");
     }
 }

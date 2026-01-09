@@ -1,5 +1,4 @@
 using Microsoft.Playwright;
-using Playwright_ReqRoll.pages;
 
 namespace Playwright_ReqRoll.pages.login;
 
@@ -25,9 +24,6 @@ public class LoginPageLocators : BasePage
 
     private ILocator LoginButton =>
         Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Login" });
-
-    private ILocator PasswordVisibilityToggle =>
-        Page.Locator("button[aria-label='Toggle password visibility']");
 
     private ILocator WelcomeHeading =>
         Page.GetByRole(AriaRole.Heading, new PageGetByRoleOptions { Level = 5 });
@@ -62,14 +58,7 @@ public class LoginPageLocators : BasePage
     {
         await LoginButton.ClickAsync();
     }
-
-    /// <summary>
-    /// Clicks the password visibility toggle button to show/hide the password.
-    /// </summary>
-    public async Task ClickPasswordVisibilityToggle()
-    {
-        await PasswordVisibilityToggle.ClickAsync();
-    }
+    
 
     /// <summary>
     /// Waits for the specified error message to appear on the page.
@@ -78,14 +67,6 @@ public class LoginPageLocators : BasePage
     public async Task WaitForErrorMessage(string message)
     {
         await Page.GetByText(message).WaitForAsync();
-    }
-
-    /// <summary>
-    /// Asserts that the password field has the 'type' attribute set to 'text', indicating visibility.
-    /// </summary>
-    public async Task AssertPasswordFieldVisibleAsText()
-    {
-        await Assertions.Expect(PasswordTextbox).ToHaveAttributeAsync("type", "text");
     }
 
     /// <summary>
@@ -125,14 +106,5 @@ public class LoginPageLocators : BasePage
     {
         return await Page.Context.CookiesAsync();
     }
-
-    /// <summary>
-    /// Gets cookies for a specific URL from the current browser context.
-    /// </summary>
-    /// <param name="url">The URL to get cookies for.</param>
-    /// <returns>A list of cookies for the specified URL.</returns>
-    public async Task<IReadOnlyList<BrowserContextCookiesResult>> GetCookies(string url)
-    {
-        return await Page.Context.CookiesAsync(new[] { url });
-    }
+    
 }

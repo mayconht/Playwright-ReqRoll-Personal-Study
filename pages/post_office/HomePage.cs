@@ -1,5 +1,4 @@
 using Microsoft.Playwright;
-using Playwright_ReqRoll.pages;
 
 namespace Playwright_ReqRoll.pages.post_office;
 
@@ -75,6 +74,6 @@ public class HomePage : BasePage
     /// <param name="stepName">The name of the step to wait for.</param>
     public async Task WaitForNextStep(string stepName)
     {
-        await WaitForTextAsync(stepName, false);
+        await WaitForTextAsync(stepName);
     }
 }

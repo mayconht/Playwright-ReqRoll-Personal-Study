@@ -23,7 +23,7 @@ public class BackgroundConfiguration
     public static async Task GivenINavigateToThePage(string url)
     {
         var page = PlaywrightHooks.Page;
-        var targetUrl = string.IsNullOrEmpty(url) ? Config.LoginPageUrl : url;
+        var targetUrl = !string.IsNullOrEmpty(url) ? url : throw new ArgumentNullException(nameof(url), "URL cannot be null or empty.");
 
         await page.GotoAsync(targetUrl);
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);

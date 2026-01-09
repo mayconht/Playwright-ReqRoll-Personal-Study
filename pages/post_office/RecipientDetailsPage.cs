@@ -33,41 +33,7 @@ public class RecipientDetailsPage(IPage page) : BasePage(page)
     private ILocator FirstNameInput => Page.Locator("#recipientFirstName");
     private ILocator LastNameInput => Page.Locator("#recipientLastName");
 
-    // ===== BUTTONS =====
-    private ILocator ContinueButton => Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Continue" });
-
-    /// <summary>
-    /// Generates fake recipient data using Bogus.
-    /// </summary>
-    private RecipientData GenerateFakeRecipient()
-    {
-        return new RecipientData
-        {
-            FirstName = _faker.Name.FirstName(),
-            LastName = _faker.Name.LastName(),
-            Company = _faker.Company.CompanyName(),
-            AddressLine1 = _faker.Address.StreetAddress(),
-            AddressLine2 = _faker.Address.SecondaryAddress(),
-            AddressLine3 = null,
-            TownCity = _faker.Address.City(),
-            County = _faker.Address.County(),
-            Postcode = GenerateUkPostcode(),
-            IsBusiness = false
-        };
-    }
-
-    /// <summary>
-    /// Generates a realistic UK postcode format.
-    /// </summary>
-    private string GenerateUkPostcode()
-    {
-        var outward = _faker.Random.String2(1, "ABCDEFGHJKLMNPRSTUWXYZ") +
-                      _faker.Random.String2(1, "ABCDEFGHJKLMNPRSTUWXYZ") +
-                      _faker.Random.Number(1, 99);
-        var inward = _faker.Random.Number(1, 9) +
-                     _faker.Random.String2(2, "ABDEFGHJLNPQRSTUWXYZ");
-        return $"{outward} {inward}";
-    }
+  
 
     // ===== ADDRESS LOOKUP METHODS =====
 
@@ -114,11 +80,7 @@ public class RecipientDetailsPage(IPage page) : BasePage(page)
     {
         await PostcodeInput.FillAsync(postcode);
     }
-
-    public async Task<string> GetCountry()
-    {
-        return await CountryInput.InputValueAsync();
-    }
+    
 
     // ===== RECIPIENT DETAILS METHODS =====
 
@@ -150,24 +112,4 @@ public class RecipientDetailsPage(IPage page) : BasePage(page)
     {
         await LastNameInput.FillAsync(lastName);
     }
-}
-
-/// <summary>
-/// Data class for recipient information.
-/// </summary>
-public class RecipientData
-{
-    // Recipient details
-    public required string FirstName { get; set; }
-    public required string LastName { get; set; }
-    public bool IsBusiness { get; set; }
-
-    // Destination address
-    public string? Company { get; set; }
-    public required string AddressLine1 { get; set; }
-    public string? AddressLine2 { get; set; }
-    public string? AddressLine3 { get; set; }
-    public required string TownCity { get; set; }
-    public string? County { get; set; }
-    public required string Postcode { get; set; }
 }

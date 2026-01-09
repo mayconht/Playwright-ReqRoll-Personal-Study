@@ -25,7 +25,7 @@ public partial class PlaywrightHooks
     /// <summary>
     /// Indicates whether Playwright resources have been initialized.
     /// </summary>
-    public static bool IsInitialized => _playwright != null && _browser != null && _context != null;
+    private static bool IsInitialized => _playwright != null && _browser != null && _context != null;
 
     #region Lifecycle Hooks
 
@@ -51,24 +51,65 @@ public partial class PlaywrightHooks
                 DownloadsPath = Config.FullDownloadsPath
             });
 
-            _context = await _browser.NewContextAsync(new BrowserNewContextOptions
-            {
-                ColorScheme = ColorScheme.Light,
-                ViewportSize = new ViewportSize
-                {
-                    Width = Config.DefaultViewportWidth,
-                    Height = Config.DefaultViewportHeight
-                },
-                RecordVideoDir = Config.RecordVideo ? Config.FullVideoPath : null,
-                RecordVideoSize = new RecordVideoSize
-                {
-                    Width = Config.DefaultViewportWidth,
-                    Height = Config.DefaultViewportHeight
-                }
-            });
+            BrowserNewContextOptions contextOptions;
 
-            Logger.LogInformation("Playwright configured successfully. Browser: {BrowserType}, Headless: {Headless}",
-                Config.BrowserType, Config.Headless);
+            if (Config.IsMobile)
+            {
+                var deviceDescriptor = _playwright.Devices[Config.Device];
+                contextOptions = new BrowserNewContextOptions(deviceDescriptor);
+
+                Logger.LogInformation("Using device preset: {Device}", Config.Device);
+            }
+            else
+            {
+                contextOptions = new BrowserNewContextOptions
+                {
+                    ViewportSize = new ViewportSize
+                    {
+                        Width = Config.ViewportWidth,
+                        Height = Config.ViewportHeight
+                    },
+                    IsMobile = false
+                };
+            }
+
+            contextOptions.Locale = Config.Locale;
+            contextOptions.TimezoneId = Config.TimezoneId;
+            contextOptions.ColorScheme = ParseColorScheme(Config.ColorSchemeString);
+
+            contextOptions.RecordVideoDir = Config.RecordVideo ? Config.FullVideoPath : null;
+            contextOptions.RecordVideoSize = new RecordVideoSize
+            {
+                Width = Config.ViewportWidth,
+                Height = Config.ViewportHeight
+            };
+
+            if (Config.GeolocationEnabled)
+            {
+                contextOptions.Geolocation = new Geolocation
+                {
+                    Latitude = (float)Config.GeolocationLatitude,
+                    Longitude = (float)Config.GeolocationLongitude
+                };
+                contextOptions.Permissions = ["geolocation"];
+            }
+
+            _context = await _browser.NewContextAsync(contextOptions);
+
+            Logger.LogInformation("Playwright configured successfully. " +
+                                  "Browser: {BrowserType}, " +
+                                  "Headless: {Headless}, " +
+                                  "Viewport: {Width}x{Height}, " +
+                                  "Device: {Device}, " +
+                                  "Locale: {Locale}, " +
+                                  "Timezone: {Timezone}",
+                Config.BrowserType, 
+                Config.Headless, 
+                Config.ViewportWidth, 
+                Config.ViewportHeight,
+                Config.Device, 
+                Config.Locale, 
+                Config.TimezoneId);
         }
         catch (Exception ex)
         {
@@ -178,14 +219,28 @@ public partial class PlaywrightHooks
     }
 
     /// <summary>
+    /// Parses color scheme string to ColorScheme enum.
+    /// </summary>
+    /// <param name="colorScheme">Color scheme string (light, dark, no-preference).</param>
+    /// <returns>ColorScheme enum value.</returns>
+    private static ColorScheme ParseColorScheme(string colorScheme)
+    {
+        return colorScheme.ToLowerInvariant() switch
+        {
+            "dark" => ColorScheme.Dark,
+            "no-preference" => ColorScheme.NoPreference,
+            _ => ColorScheme.Light
+        };
+    }
+
+    /// <summary>
     /// Verifies that Playwright was initialized correctly.
     /// </summary>
     /// <exception cref="InvalidOperationException">If not initialized.</exception>
     private static void EnsureInitialized()
     {
         if (!IsInitialized)
-            throw new InvalidOperationException(
-                "Playwright was not initialized. Verify that GlobalSetup was executed.");
+            throw new InvalidOperationException("Playwright was not initialized. Verify that GlobalSetup was executed.");
     }
 
     /// <summary>
@@ -216,7 +271,7 @@ public partial class PlaywrightHooks
         var status = testFailed ? "failed" : "passed";
         var screenshotPath = Path.Combine(Config.FullScreenshotsPath, $"{scenarioTitle}_{timestamp}_{status}.png");
 
-        await Page.ScreenshotAsync(new PageScreenshotOptions { Path = screenshotPath, FullPage = true });
+        await Page.ScreenshotAsync(new PageScreenshotOptions { Path = screenshotPath, FullPage = true, Scale = ScreenshotScale.Device });
         Logger.LogInformation("Screenshot saved: {Path}", screenshotPath);
     }
 
@@ -226,7 +281,7 @@ public partial class PlaywrightHooks
     /// <param name="scenarioTitle">Sanitized scenario title.</param>
     /// <param name="timestamp">Timestamp for filename.</param>
     /// <param name="testFailed">Indicates if test failed.</param>
-    private async Task SaveTraceAsync(string scenarioTitle, string timestamp, bool testFailed)
+    private static async Task SaveTraceAsync(string scenarioTitle, string timestamp, bool testFailed)
     {
         if (testFailed || Config.SaveTracesOnPass)
         {
@@ -249,7 +304,7 @@ public partial class PlaywrightHooks
     /// <param name="scenarioTitle">Sanitized scenario title.</param>
     /// <param name="timestamp">Timestamp for filename.</param>
     /// <param name="status">Test status (passed/failed).</param>
-    private async Task SaveVideoIfConfigured(string scenarioTitle, string timestamp, string status)
+    private static async Task SaveVideoIfConfigured(string scenarioTitle, string timestamp, string status)
     {
         if (!Config.RecordVideo || Page.Video == null) return;
 
@@ -277,7 +332,7 @@ public partial class PlaywrightHooks
     /// <summary>
     /// Closes the page safely.
     /// </summary>
-    private async Task ClosePageSafely()
+    private static async Task ClosePageSafely()
     {
         try
         {
