@@ -113,7 +113,7 @@ jobs:
 
       - name: Publish Test Results
         if: always()
-        uses: EnricoMi/publish-unit-test-result-action@v2
+        uses: EnricoMi/publish-unit-test-result-action/linux@v2
         with:
           files: '${{ github.workspace }}/TestResults/**/*.trx'
           check_name: 'Playwright-ReqRoll Tests - ${{ env.BROWSER__TYPE }}'
