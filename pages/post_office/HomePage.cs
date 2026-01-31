@@ -24,6 +24,33 @@ public class HomePage : BasePage
     private ILocator GetStartedButton =>
         Page.GetByRole(AriaRole.Link, new PageGetByRoleOptions { Name = "Get Started" });
 
+    private ILocator CookieAcceptButton => Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Accept" });
+
+    /// <summary>
+    /// Navigates to the specified URL and handles the cookie consent modal.
+    /// </summary>
+    /// <param name="url">The URL to navigate to.</param>
+    /// <param name="waitForNetworkIdle">Whether to wait for network idle state. Default: true.</param>
+    public override async Task NavigateToAsync(string url, bool waitForNetworkIdle = true)
+    {
+        await base.NavigateToAsync(url, waitForNetworkIdle);
+
+        try
+        {
+            await CookieAcceptButton.WaitForAsync(new LocatorWaitForOptions
+            {
+                State = WaitForSelectorState.Visible,
+                Timeout = 3000
+            });
+            await CookieAcceptButton.ClickAsync();
+            await Page.WaitForTimeoutAsync(500);
+        }
+        catch
+        {
+            // Modal not found or already closed - this is fine
+        }
+    }
+
     /// <summary>
     /// Selects the destination country from the dropdown.
     /// </summary>

@@ -44,17 +44,19 @@ So that I can send items through the Isle of Man Post Office
         And I set sending to business "<SendingToBusiness>" and "<RecipientName>"
         And I enter recipient first name "<FirstName>"
         And I enter recipient last name "<LastName>"
-        # UI - Phone Number is shown in a different page depending on the package selected.
+        #Phone Number is shown in a different page depending on the package selected.
         And I click Continue on recipient details
 
+        # Step 6: Sender Details
+        When I enter sender first name "<SenderFirstName>"
+        And I enter sender last name "<SenderLastName>"
+        And I enter sender phone "<SenderPhone>"
+        And I enter sender email "<SenderEmail>"
+        And I confirm sender email "<SenderEmail>"
+        And I search for sender address "<SenderAddress>"
+        And I select the first sender address from results
+        And I click Continue on sender details
+
         Examples: UK Letter Services
-          | Destination    | Weight | Format | PostingMethod                     | ItemType | Service               | RecipientName | RecipientAddress | RecipientTown | RecipientPostcode | SendingToBusiness | FirstName | LastName |
-          | United Kingdom | 50     | Grams  | Drop off at a Post Office counter | Letter   | United Kingdom Letter | Test Corp     | 123 Main St      | PATHHEAD      | EH37 5PT          | true              | User1     | Name1    |
-
-          # Examples: UK Special Delivery
-          #   | Destination    | Weight | Format | PostingMethod                     | ItemType | Service                            | RecipientName | RecipientAddress | RecipientTown | RecipientPostcode | SendingToBusiness | FirstName | LastName |
-          #   | United Kingdom | 50     | Grams  | Drop off at a Post Office counter | Letter   | Special Delivery Two Day by 5.30pm | Fast Co       | UNIT M3A         | BICESTER      | OX26 4LD          | false             | User1     | Name1    |
-
-        Examples: UK Parcel Services
-          | Destination    | Weight | Format | PostingMethod                     | ItemType | Service               | RecipientName | RecipientAddress | RecipientTown | RecipientPostcode | SendingToBusiness | FirstName | LastName |
-          | United Kingdom | 1      | Kg     | Drop off at a Post Office counter | Letter   | United Kingdom Letter | Test Corp     | 123 Main St      | PATHHEAD      | EH37 5PT          | false             | User1     | Name1    |
+          | Destination    | Weight | Format | PostingMethod                     | ItemType | Service               | RecipientName | RecipientAddress | RecipientTown | RecipientPostcode | SendingToBusiness | FirstName | LastName | SenderCompany | SenderAddress | SenderTown | SenderPostcode | SenderFirstName | SenderLastName | SenderEmail           | SenderPhone   |
+          | United Kingdom | 50     | Grams  | Drop off at a Post Office counter | Letter   | United Kingdom Letter | Test Corp     | 123 Main St      | PATHHEAD      | EH37 5PT          | false             | User1     | Name1    | Sender Inc    | Oak           | DOUGLAS    | IM1 A13        | John            | Doe            | john.doe@test.com     | 07700 900123  |

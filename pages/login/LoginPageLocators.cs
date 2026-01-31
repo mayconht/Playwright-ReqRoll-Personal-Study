@@ -16,22 +16,12 @@ public class LoginPageLocators : BasePage
     {
     }
 
-    private ILocator UsernameTextbox =>
-        Page.GetByRole(AriaRole.Textbox, new PageGetByRoleOptions { Name = "Username" });
-
-    private ILocator PasswordTextbox =>
-        Page.GetByRole(AriaRole.Textbox, new PageGetByRoleOptions { Name = "Password" });
-
-    private ILocator LoginButton =>
-        Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Login" });
-
-    private ILocator WelcomeHeading =>
-        Page.GetByRole(AriaRole.Heading, new PageGetByRoleOptions { Level = 5 });
-
+    private ILocator UsernameTextbox => Page.GetByRole(AriaRole.Textbox, new PageGetByRoleOptions { Name = "Username" });
+    private ILocator PasswordTextbox => Page.GetByRole(AriaRole.Textbox, new PageGetByRoleOptions { Name = "Password" });
+    private ILocator LoginButton => Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Login" });
+    private ILocator WelcomeHeading => Page.GetByRole(AriaRole.Heading, new PageGetByRoleOptions { Level = 5 });
     private ILocator LoggedInAlert => Page.Locator(".MuiAlert-message");
-
-    private ILocator LogoutButton =>
-        Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Logout" });
+    private ILocator LogoutButton => Page.GetByRole(AriaRole.Button, new PageGetByRoleOptions { Name = "Logout" });
 
     /// <summary>
     /// Enters the specified username into the username textbox.

@@ -1,5 +1,4 @@
 using Microsoft.Playwright;
-using Playwright_ReqRoll.pages;
 
 namespace Playwright_ReqRoll.pages.post_office;
 
@@ -36,7 +35,6 @@ public class ProvideItemsPage : BasePage
             _ => throw new ArgumentException($"Unknown posting method: {method}")
         };
 
-        // DispatchEventAsync bypasses all actionability checks and directly dispatches the click event
         await locator.DispatchEventAsync("click");
     }
 }

@@ -50,7 +50,7 @@ public abstract class BasePage
     /// Waits for the page to reach network idle state.
     /// </summary>
     /// <param name="timeout">Timeout in milliseconds. Default: 10000.</param>
-    public virtual async Task WaitForPageLoadAsync(int timeout = DefaultPageLoadTimeout)
+    public async Task WaitForPageLoadAsync(int timeout = DefaultPageLoadTimeout)
     {
         try
         {
@@ -61,7 +61,7 @@ public abstract class BasePage
         }
         catch (TimeoutException)
         {
-            // Page may have already loaded or timeout is acceptable
+            //Dont throw on timeout - sometimes network idle is not reached but page is usable
         }
     }
 
@@ -70,7 +70,7 @@ public abstract class BasePage
     /// </summary>
     /// <param name="urlPattern">URL pattern to match (supports wildcards with **).</param>
     /// <param name="timeout">Timeout in milliseconds. Default: 10000.</param>
-    public virtual async Task WaitForUrlAsync(string urlPattern, int timeout = DefaultPageLoadTimeout)
+    public async Task WaitForUrlAsync(string urlPattern, int timeout = DefaultPageLoadTimeout)
     {
         await Page.WaitForURLAsync(urlPattern, new PageWaitForURLOptions
         {
@@ -206,18 +206,4 @@ public abstract class BasePage
     }
 
     #endregion
-
-    /// <summary>
-    /// Takes a screenshot of the current page.
-    /// </summary>
-    /// <param name="path">Path to save the screenshot.</param>
-    /// <param name="fullPage">Whether to capture full page. Default: true.</param>
-    public virtual async Task TakeScreenshotAsync(string path, bool fullPage = true)
-    {
-        await Page.ScreenshotAsync(new PageScreenshotOptions
-        {
-            Path = path,
-            FullPage = fullPage
-        });
-    }
 }

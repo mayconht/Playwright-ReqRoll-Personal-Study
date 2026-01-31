@@ -15,6 +15,7 @@ public class PostageCalculatorSteps
     private static ParcelSizePage ParcelSizePage => new(PlaywrightHooks.Page);
     private static ServiceSelectionPage ServiceSelectionPage => new(PlaywrightHooks.Page);
     private static RecipientDetailsPage RecipientDetailsPage => new(PlaywrightHooks.Page);
+    private static SendersDetailsPage SendersDetailsPage => new(PlaywrightHooks.Page);
 
     #region Home Page Steps
 
@@ -252,6 +253,26 @@ public class PostageCalculatorSteps
     }
 
     /// <summary>
+    /// Enters the recipient's first name.
+    /// </summary>
+    /// <param name="firstName">The first name to enter.</param>
+    [When("I enter recipient first name {string}")]
+    public async Task WhenIEnterRecipientFirstName(string firstName)
+    {
+        await RecipientDetailsPage.EnterFirstName(firstName);
+    }
+
+    /// <summary>
+    /// Enters the recipient's last name.
+    /// </summary>
+    /// <param name="lastName">The last name to enter.</param>
+    [When("I enter recipient last name {string}")]
+    public async Task WhenIEnterRecipientLastName(string lastName)
+    {
+        await RecipientDetailsPage.EnterLastName(lastName);
+    }
+
+    /// <summary>
     /// Clicks Continue on the recipient details page.
     /// </summary>
     [When(@"I click Continue on recipient details")]
@@ -262,17 +283,85 @@ public class PostageCalculatorSteps
 
     #endregion
 
+    #region Sender Details Page Steps
 
-    [When("I enter recipient first name {string}")]
-    public async Task WhenIEnterRecipientFirstName(string firstName)
+    /// <summary>
+    /// Enters the sender's first name.
+    /// </summary>
+    /// <param name="firstName">The first name to enter.</param>
+    [When(@"I enter sender first name ""(.*)""")]
+    public async Task WhenIEnterSenderFirstName(string firstName)
     {
-        await RecipientDetailsPage.EnterFirstName(firstName);
+        await SendersDetailsPage.EnterFirstName(firstName);
     }
 
-
-    [When("I enter recipient last name {string}")]
-    public async Task WhenIEnterRecipientLastName(string lastName)
+    /// <summary>
+    /// Enters the sender's last name.
+    /// </summary>
+    /// <param name="lastName">The last name to enter.</param>
+    [When(@"I enter sender last name ""(.*)""")]
+    public async Task WhenIEnterSenderLastName(string lastName)
     {
-        await RecipientDetailsPage.EnterLastName(lastName);
+        await SendersDetailsPage.EnterLastName(lastName);
     }
+
+    /// <summary>
+    /// Enters the sender's phone number.
+    /// </summary>
+    /// <param name="phone">The phone number to enter.</param>
+    [When(@"I enter sender phone ""(.*)""")]
+    public async Task WhenIEnterSenderPhone(string phone)
+    {
+        await SendersDetailsPage.EnterPhone(phone);
+    }
+
+    /// <summary>
+    /// Enters the sender's email address.
+    /// </summary>
+    /// <param name="email">The email address to enter.</param>
+    [When(@"I enter sender email ""(.*)""")]
+    public async Task WhenIEnterSenderEmail(string email)
+    {
+        await SendersDetailsPage.EnterEmail(email);
+    }
+
+    /// <summary>
+    /// Confirms the sender's email address.
+    /// </summary>
+    /// <param name="email">The email address to confirm.</param>
+    [When(@"I confirm sender email ""(.*)""")]
+    public async Task WhenIConfirmSenderEmail(string email)
+    {
+        await SendersDetailsPage.ConfirmEmail(email);
+    }
+
+    /// <summary>
+    /// Searches for sender's address using postcode lookup.
+    /// </summary>
+    /// <param name="postcode">The postcode to search for.</param>
+    [When(@"I search for sender address ""(.*)""")]
+    public async Task WhenISearchForSenderAddress(string postcode)
+    {
+        await SendersDetailsPage.SearchAddress(postcode);
+    }
+
+    /// <summary>
+    /// Selects the first address from sender's address lookup results.
+    /// </summary>
+    [When(@"I select the first sender address from results")]
+    public async Task WhenISelectTheFirstSenderAddressFromResults()
+    {
+        await SendersDetailsPage.SelectAddressFromResults();
+    }
+
+    /// <summary>
+    /// Clicks Continue on the sender details page.
+    /// </summary>
+    [When(@"I click Continue on sender details")]
+    public async Task WhenIClickContinueOnSenderDetails()
+    {
+        await SendersDetailsPage.ClickContinueAsync();
+    }
+
+    #endregion
 }

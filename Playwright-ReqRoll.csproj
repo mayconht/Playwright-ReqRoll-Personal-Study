@@ -39,4 +39,11 @@
         <Using Include="System.Threading.Tasks"/>
     </ItemGroup>
 
+    <Target Name="DeleteGeneratedFeatureCs" AfterTargets="Clean">
+        <ItemGroup>
+            <GeneratedFeatureFiles Include="**\*.feature.cs" />
+        </ItemGroup>
+        <Delete Files="@(GeneratedFeatureFiles)" ContinueOnError="true" />
+    </Target>
+    
 </Project>

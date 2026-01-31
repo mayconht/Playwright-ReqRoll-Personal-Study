@@ -6,7 +6,6 @@ namespace Playwright_ReqRoll.pages.post_office;
 /// <summary>
 /// Page Object for the Recipient Details page.
 /// URL: https://onlinepostage.iompost.com/my-order/recipient-details
-/// Uses Bogus library for generating fake test data.
 /// </summary>
 public class RecipientDetailsPage(IPage page) : BasePage(page)
 {
